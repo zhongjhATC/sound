@@ -23,25 +23,31 @@ public class MediaPlayerQueue {
     private ArrayList<Integer> playerModels = new ArrayList<>(); // 音乐队列
     private boolean isPlay = false; // 这个队列正在播放
 
-
     /**
      * 初始化
      */
     public void init(Context context) {
         // 设置描述音频流信息的属性
         assetManager = context.getAssets();
-        loadSound(VoicePromptType.pass, "pass.mp3");
-        loadSound(VoicePromptType.unauthorized, "no_auth.mp3");
-        loadSound(VoicePromptType.no_mask, "no_mask.mp3");
-        loadSound(VoicePromptType.normal_temperature, "temp_normal.mp3");
-        loadSound(VoicePromptType.abnormal_temperature, "temp_exception.mp3");
-        loadSound(VoicePromptType.near_measure, "near_measure_temperature.mp3");
+        loadSound(Type.pass, "pass.mp3");
+        loadSound(Type.unauthorized, "no_auth.mp3");
+        loadSound(Type.no_mask, "no_mask.mp3");
+        loadSound(Type.normal_temperature, "temp_normal.mp3");
+        loadSound(Type.abnormal_temperature, "temp_exception.mp3");
+        loadSound(Type.near_measure, "near_measure_temperature.mp3");
+    }
+
+    /**
+     * 加入类型
+     */
+    public void addSoundPoolPlayer(int type, SoundPoolPlayer soundPoolPlayer) {
+        soundList.put(type,soundPoolPlayer);
     }
 
     /**
      * 加载提示语音
      */
-    private void loadSound(VoicePromptType voicePromptType, String fileName) {
+    public void loadSound(Type type, String fileName) {
         try {
             String language = LanguageUtil.getLanguage(); //获取语言
             if (language.equals("zh_TW")) {
@@ -49,15 +55,15 @@ public class MediaPlayerQueue {
             }
             AssetFileDescriptor assetFileDescriptor = assetManager.openFd("sound/locale/" + language + "/" + fileName);
             SoundPoolPlayer soundPoolPlayer = SoundPoolPlayer.create(assetFileDescriptor);
-            soundList.put(voicePromptType, soundPoolPlayer);
+            soundList.put(type, soundPoolPlayer);
             // 事件
-            soundList.get(voicePromptType).setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            soundList.get(type).setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
-                    playCompletionListener(voicePromptType);
+                    playCompletionListener(type);
                 }
             });
-//            soundList.get(voicePromptType).setOnCompletionListener(mp -> playCompletionListener());
+//            soundList.get(type).setOnCompletionListener(mp -> playCompletionListener());
         } catch (Exception e) {
             Log.e("MediaPlayerUtils", "load sound error", e);
         }
@@ -66,12 +72,12 @@ public class MediaPlayerQueue {
     /**
      * 播放
      *
-     * @param voicePromptType 类型
+     * @param type 类型
      */
-    synchronized void play(VoicePromptType voicePromptType) {
+    synchronized void play(Type type) {
         // 如果开启提示语音
         if (SoundSettings.getSettingSoundSwitch()) {
-            switch (voicePromptType) {
+            switch (type) {
                 case pass:
                     if (isPass) {
                         return;
@@ -106,7 +112,7 @@ public class MediaPlayerQueue {
                     break;
             }
 
-            playerModels.add(new PlayerModel(0L, voicePromptType));
+            playerModels.add(new PlayerModel(0L, type));
             if (!isPlay) {
                 playRecursive();
             }
@@ -139,9 +145,9 @@ public class MediaPlayerQueue {
     /**
      * 播放完后的动作
      */
-    private void playCompletionListener(VoicePromptType voicePromptType) {
+    private void playCompletionListener(Type type) {
         if (playerModels.size() > 0) {
-            if (voicePromptType == playerModels.get(0).voicePromptType) {
+            if (type == playerModels.get(0).voicePromptType) {
                 // 播放完，判断类型是否一样，一样就删除本身
                 Log.i(TAG, "删除语音 :" + playerModels.get(0).voicePromptType);
                 playerModels.remove(0);
@@ -160,7 +166,7 @@ public class MediaPlayerQueue {
         Iterator<PlayerModel> it = playerModels.iterator();
         while (it.hasNext()) {
             PlayerModel x = it.next();
-            if (x.getVoicePromptType() == VoicePromptType.near_measure)
+            if (x.getVoicePromptType() == Type.near_measure)
                 it.remove();
         }
         if (playerModels.size() <= 0) {
