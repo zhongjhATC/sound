@@ -1,14 +1,12 @@
 package com.zhongjh.soundpoolqueue;
 
-import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
-import android.media.MediaPlayer;
 import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -17,56 +15,23 @@ import java.util.Map;
 public class MediaPlayerQueue {
 
     public static final String TAG = MediaPlayerQueue.class.getSimpleName();
-
-    private AssetManager assetManager; // 资源管理框架
-    private Map<Integer, SoundPoolPlayer> soundList = new HashMap<>(); // 用HashMap方式存储类型
+    private Map<Integer, SoundPoolQueue> soundList = new HashMap<>(); // 用HashMap方式存储类型
     private ArrayList<Integer> playerModels = new ArrayList<>(); // 音乐队列
+    private ArrayList<Integer> repetitions = new ArrayList<>(); // 重复播放的音乐队列
     private boolean isPlay = false; // 这个队列正在播放
-
-    /**
-     * 初始化
-     */
-    public void init(Context context) {
-        // 设置描述音频流信息的属性
-        assetManager = context.getAssets();
-        loadSound(Type.pass, "pass.mp3");
-        loadSound(Type.unauthorized, "no_auth.mp3");
-        loadSound(Type.no_mask, "no_mask.mp3");
-        loadSound(Type.normal_temperature, "temp_normal.mp3");
-        loadSound(Type.abnormal_temperature, "temp_exception.mp3");
-        loadSound(Type.near_measure, "near_measure_temperature.mp3");
-    }
 
     /**
      * 加入类型
      */
-    public void addSoundPoolPlayer(int type, SoundPoolPlayer soundPoolPlayer) {
-        soundList.put(type,soundPoolPlayer);
+    public void addSoundPoolPlayer(int type, SoundPoolQueue soundPoolQueue) {
+        soundList.put(type, soundPoolQueue);
     }
 
     /**
-     * 加载提示语音
+     * @param repetitions 重复播放的音乐队列
      */
-    public void loadSound(Type type, String fileName) {
-        try {
-            String language = LanguageUtil.getLanguage(); //获取语言
-            if (language.equals("zh_TW")) {
-                language = "zh_CN";
-            }
-            AssetFileDescriptor assetFileDescriptor = assetManager.openFd("sound/locale/" + language + "/" + fileName);
-            SoundPoolPlayer soundPoolPlayer = SoundPoolPlayer.create(assetFileDescriptor);
-            soundList.put(type, soundPoolPlayer);
-            // 事件
-            soundList.get(type).setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    playCompletionListener(type);
-                }
-            });
-//            soundList.get(type).setOnCompletionListener(mp -> playCompletionListener());
-        } catch (Exception e) {
-            Log.e("MediaPlayerUtils", "load sound error", e);
-        }
+    public void setRepetitions(ArrayList<Integer> repetitions) {
+        this.repetitions = repetitions;
     }
 
     /**
@@ -74,48 +39,59 @@ public class MediaPlayerQueue {
      *
      * @param type 类型
      */
-    synchronized void play(Type type) {
-        // 如果开启提示语音
-        if (SoundSettings.getSettingSoundSwitch()) {
-            switch (type) {
-                case pass:
-                    if (isPass) {
-                        return;
-                    } else {
-                        isPass = true;
-                        Log.i(TAG, "isPass: " + isPass);
-                    }
-                    break;
-                case no_mask:
-                    if (isNoMask)
-                        return;
-                    else
-                        isNoMask = true;
-                    break;
-                case abnormal_temperature:
-                    if (isAbnormalTemperature)
-                        return;
-                    else
-                        isAbnormalTemperature = true;
-                    break;
-                case normal_temperature:
-                    if (isNormalTemperature)
-                        return;
-                    else
-                        isNormalTemperature = true;
-                    break;
-                case unauthorized:
-                    if (isUnauthorized)
-                        return;
-                    else
-                        isUnauthorized = true;
-                    break;
-            }
+    public synchronized void play(int type) {
+        if (soundList.get(type) == null){
+            // 抛出异常
+        }
 
-            playerModels.add(new PlayerModel(0L, type));
-            if (!isPlay) {
-                playRecursive();
+
+        if (!repetitions.contains(type)) {
+            // 是否在队列中已经播放
+            if (soundList.get(type).isHasPlaying()) {
+                return;
+            } else {
+                soundList.get(type).setHasPlaying(true);
             }
+        }
+
+//        switch (type) {
+//            case pass:
+//                if (isPass) {
+//                    return;
+//                } else {
+//                    isPass = true;
+//                    Log.i(TAG, "isPass: " + isPass);
+//                }
+//                break;
+//            case no_mask:
+//                if (isNoMask)
+//                    return;
+//                else
+//                    isNoMask = true;
+//                break;
+//            case abnormal_temperature:
+//                if (isAbnormalTemperature)
+//                    return;
+//                else
+//                    isAbnormalTemperature = true;
+//                break;
+//            case normal_temperature:
+//                if (isNormalTemperature)
+//                    return;
+//                else
+//                    isNormalTemperature = true;
+//                break;
+//            case unauthorized:
+//                if (isUnauthorized)
+//                    return;
+//                else
+//                    isUnauthorized = true;
+//                break;
+//        }
+
+        playerModels.add(new PlayerModel(0L, type));
+        if (!isPlay) {
+            playRecursive();
         }
     }
 
