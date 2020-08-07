@@ -10,9 +10,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.zhongjh.soundpoolqueue.MediaPlayerQueue;
 import com.zhongjh.soundpoolqueue.SoundPoolPlayer;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity {
 
-    private AssetManager assetManager; // 资源管理框架
+    // 资源管理框架
+    private AssetManager assetManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,8 +30,12 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.NORMAL_TEMPERATURE, loadSound("temp_normal.mp3"));
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.ABNORMAL_TEMPERATURE, loadSound("temp_exception.mp3"));
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.NEAR_MEASURE, loadSound("near_measure_temperature.mp3"));
+        // 请靠近测温允许重复播放
+        ArrayList<Integer> repetitions = new ArrayList<>();
+        repetitions.add(VoicePromptType.NEAR_MEASURE);
+        mediaPlayerQueue.setRepetitions(repetitions);
 
-        // 播放请继续测温10次
+        // 播放请靠近测温10次
         findViewById(R.id.button1).setOnClickListener(v -> {
             for (int i = 0; i < 10; i++) {
                 mediaPlayerQueue.play(VoicePromptType.NEAR_MEASURE);
@@ -36,33 +43,20 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        // 播放温度正常，播放pass
         findViewById(R.id.button2).setOnClickListener(v -> {
+            mediaPlayerQueue.play(VoicePromptType.NORMAL_TEMPERATURE);
             mediaPlayerQueue.play(VoicePromptType.PASS);
         });
-//
-//        findViewById(R.id.button3).setOnClickListener(v -> {
-//            AssetManager assetManager = App.getInstance().getAssets();
-//            AssetFileDescriptor afd = null;
-//            try {
-//                afd = assetManager.openFd("sound/locale/zh_CN/near_measure_temperature.mp3");
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            SoundPoolPlayer soundPoolPlayer = new SoundPoolPlayer.Builder().maxDuration(2000).create(afd);
-//            soundPoolPlayer.play();
-//            soundPoolPlayer.setOnCompletionListener(mp -> soundPoolPlayer.play());
-//
-////            SoundPoolPlayer2 soundPoolPlayer = SoundPoolPlayer2.create(App.getInstance(),R.raw.near_measure_temperature);
-////            soundPoolPlayer.play();
-////            soundPoolPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-////                @Override
-////                public void onCompletion(MediaPlayer mp) {
-////                    soundPoolPlayer.play();
-////                }
-////            });
-//
-//        });
 
+        // 立即停止所有
+        findViewById(R.id.button3).setOnClickListener(v -> mediaPlayerQueue.clearAll(true));
+
+        // 停止所有（除了当前正在播放的）
+        findViewById(R.id.button4).setOnClickListener(v -> mediaPlayerQueue.clearAll(false));
+
+        // 立即停止所有 靠近测温的
+        findViewById(R.id.button5).setOnClickListener(v -> mediaPlayerQueue.clearAllSpecifyType(VoicePromptType.NEAR_MEASURE));
     }
 
     /**

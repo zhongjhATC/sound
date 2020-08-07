@@ -14,21 +14,26 @@ import java.util.Objects;
  */
 public class MediaPlayerQueue {
 
-    public static final String TAG = MediaPlayerQueue.class.getSimpleName();
-    private Map<Integer, SoundPoolQueue> soundList = new HashMap<>(); // 用HashMap方式存储类型
-    private ArrayList<Integer> playerModels = new ArrayList<>(); // 音乐队列
-    private ArrayList<Integer> repetitions = new ArrayList<>(); // 重复播放的音乐队列
+    private static final String TAG = MediaPlayerQueue.class.getSimpleName();
+    private HashMap<Integer, SoundPoolPlayer> soundList = new HashMap<>(); // 用HashMap方式存储类型
+    private HashMap<Integer, Boolean> soundIsPlayList = new HashMap<>(); // 用HashMap方式存储类型,这个判断类型是否播放中
+    private ArrayList<Integer> playerQueues = new ArrayList<>(); // 加入播放的音乐队列
+    private ArrayList<Integer> repetitions = new ArrayList<>(); // 允许重复播放的音乐类型
     private boolean isPlay = false; // 这个队列正在播放
 
     /**
      * 加入类型
      */
-    public void addSoundPoolPlayer(int type, SoundPoolQueue soundPoolQueue) {
+    public void addSoundPoolPlayer(int type, SoundPoolPlayer soundPoolQueue) {
         soundList.put(type, soundPoolQueue);
+        soundIsPlayList.put(type, false);
+
+        // 播放完的事件
+        Objects.requireNonNull(soundList.get(type)).setOnCompletionListener(mp -> playCompletionListener(type));
     }
 
     /**
-     * @param repetitions 重复播放的音乐队列
+     * @param repetitions 重复播放的音乐类型
      */
     public void setRepetitions(ArrayList<Integer> repetitions) {
         this.repetitions = repetitions;
@@ -40,56 +45,19 @@ public class MediaPlayerQueue {
      * @param type 类型
      */
     public synchronized void play(int type) {
-        if (soundList.get(type) == null){
+        if (soundList.get(type) == null) {
             // 抛出异常
+            return;
         }
-
-
         if (!repetitions.contains(type)) {
             // 是否在队列中已经播放
-            if (soundList.get(type).isHasPlaying()) {
+            if (Objects.requireNonNull(soundIsPlayList.get(type))) {
                 return;
             } else {
-                soundList.get(type).setHasPlaying(true);
+                Objects.requireNonNull(soundIsPlayList.put(type, true));
             }
         }
-
-//        switch (type) {
-//            case pass:
-//                if (isPass) {
-//                    return;
-//                } else {
-//                    isPass = true;
-//                    Log.i(TAG, "isPass: " + isPass);
-//                }
-//                break;
-//            case no_mask:
-//                if (isNoMask)
-//                    return;
-//                else
-//                    isNoMask = true;
-//                break;
-//            case abnormal_temperature:
-//                if (isAbnormalTemperature)
-//                    return;
-//                else
-//                    isAbnormalTemperature = true;
-//                break;
-//            case normal_temperature:
-//                if (isNormalTemperature)
-//                    return;
-//                else
-//                    isNormalTemperature = true;
-//                break;
-//            case unauthorized:
-//                if (isUnauthorized)
-//                    return;
-//                else
-//                    isUnauthorized = true;
-//                break;
-//        }
-
-        playerModels.add(new PlayerModel(0L, type));
+        playerQueues.add(type);
         if (!isPlay) {
             playRecursive();
         }
@@ -100,33 +68,35 @@ public class MediaPlayerQueue {
      */
     private void playRecursive() {
         // 音效队列已经没有了
-        if (playerModels.size() <= 0) {
+        if (playerQueues.size() <= 0) {
             isPlay = false;
             return;
         }
         // 开始播放
         isPlay = true;
-        Log.i(TAG, "总共" + playerModels.size() + "份语音 :" + playerModels.get(0).voicePromptType);
+        Log.d(TAG, "总共" + playerQueues.size() + "份语音 :" + playerQueues.get(0));
 
         // 如果这个队列没有音频文件，则播放下一个
-        if (soundList.get(playerModels.get(0).voicePromptType) == null) {
-            // 等待100毫秒
-            playCompletionListener(playerModels.get(0).voicePromptType);
+        if (soundList.get(playerQueues.get(0)) == null) {
+            // 播放下一首
+            playCompletionListener(playerQueues.get(0));
         } else {
             // 开始播放
-            soundList.get(playerModels.get(0).voicePromptType).play();
+            Objects.requireNonNull(soundList.get(playerQueues.get(0))).play();
         }
     }
 
     /**
      * 播放完后的动作
+     * 1.播放下一首
+     * 2.设置播放结束
      */
-    private void playCompletionListener(Type type) {
-        if (playerModels.size() > 0) {
-            if (type == playerModels.get(0).voicePromptType) {
+    private void playCompletionListener(int type) {
+        if (playerQueues.size() > 0) {
+            if (type == playerQueues.get(0)) {
                 // 播放完，判断类型是否一样，一样就删除本身
-                Log.i(TAG, "删除语音 :" + playerModels.get(0).voicePromptType);
-                playerModels.remove(0);
+                Log.d(TAG, "删除语音 :" + playerQueues.get(0));
+                playerQueues.remove(0);
             }
             // 播放下一首
             playRecursive();
@@ -136,33 +106,46 @@ public class MediaPlayerQueue {
     }
 
     /**
-     * 删除所有请靠近语音
+     * 删除所有某个类型的音乐类型
      */
-    public void clearAllNearMeasure() {
-        Iterator<PlayerModel> it = playerModels.iterator();
+    public void clearAllSpecifyType(int type) {
+        Iterator<Integer> it = playerQueues.iterator();
         while (it.hasNext()) {
-            PlayerModel x = it.next();
-            if (x.getVoicePromptType() == Type.near_measure)
+            Integer x = it.next();
+            if (x == type)
                 it.remove();
         }
-        if (playerModels.size() <= 0) {
+        if (playerQueues.size() <= 0) {
             isPlay = false;
         }
     }
 
     /**
-     * 删除所有声音
+     * @param isPrerupt 是否停止所有语音的时候突然中断当前声音
      */
-    public void clearAll() {
-        Log.i(TAG, "clearAll");
-        isPlay = false;
-        playerModels.clear();
-        isPass = false;
-        Log.i(TAG, "isPass: " + isPass);
-        isUnauthorized = false;
-        isNoMask = false;
-        isNormalTemperature = false;
-        isAbnormalTemperature = false;
+    public void clearAll(boolean isPrerupt) {
+        Log.d(TAG, "clearAll");
+        if (isPrerupt) {
+            // 设置当前状态不是播放中
+            isPlay = false;
+            // 停止当前所有声音队列
+            for (Integer item : playerQueues) {
+                if (soundList.get(item) != null)
+                    Objects.requireNonNull(soundList.get(item)).stop();
+            }
+            // 删除所有声音队列
+            playerQueues.clear();
+        } else {
+            // 如果是播放中，则留下当前第一个，等它播放完
+            for (int i = playerQueues.size() - 1; i > 0; i--) {
+                if (playerQueues.get(i) != null)
+                    playerQueues.remove(i);
+            }
+        }
+        // 设置所有音乐类型都不是播放中
+        for (Map.Entry<Integer, Boolean> entry : soundIsPlayList.entrySet()) {
+            entry.setValue(false);
+        }
     }
 
 }
