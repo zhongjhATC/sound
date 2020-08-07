@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         assetManager = MainActivity.this.getAssets();
 
+        // 初始化几种类型语音
         MediaPlayerQueue mediaPlayerQueue = new MediaPlayerQueue();
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.PASS, loadSound("pass.mp3"));
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.UNAUTHORIZED, loadSound("no_auth.mp3"));
@@ -30,14 +31,15 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.NORMAL_TEMPERATURE, loadSound("temp_normal.mp3"));
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.ABNORMAL_TEMPERATURE, loadSound("temp_exception.mp3"));
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.NEAR_MEASURE, loadSound("near_measure_temperature.mp3"));
-        // 请靠近测温允许重复播放
+
+        // 设置请靠近测温允许重复播放
         ArrayList<Integer> repetitions = new ArrayList<>();
         repetitions.add(VoicePromptType.NEAR_MEASURE);
         mediaPlayerQueue.setRepetitions(repetitions);
 
-        // 播放请靠近测温10次
+        // 播放请靠近测温5次
         findViewById(R.id.button1).setOnClickListener(v -> {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 5; i++) {
                 mediaPlayerQueue.play(VoicePromptType.NEAR_MEASURE);
             }
 

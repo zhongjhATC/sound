@@ -194,9 +194,6 @@ public class SoundPoolPlayer extends SoundPool {
         String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
         mmr.release();
         duration = Long.parseLong(durationStr);
-        if (duration > 2000)
-            // 如果超过10秒，则返回2秒
-            return 2000;
         return duration;
     }
 
