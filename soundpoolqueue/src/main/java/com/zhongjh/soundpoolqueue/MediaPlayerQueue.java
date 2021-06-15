@@ -15,11 +15,48 @@ import java.util.Objects;
 public class MediaPlayerQueue {
 
     private static final String TAG = MediaPlayerQueue.class.getSimpleName();
-    private HashMap<Integer, SoundPoolPlayer> soundList = new HashMap<>(); // 用HashMap方式存储类型
-    private HashMap<Integer, Boolean> soundIsPlayList = new HashMap<>(); // 用HashMap方式存储类型,这个判断类型是否播放中
-    private ArrayList<Integer> playerQueues = new ArrayList<>(); // 加入播放的音乐队列
-    private ArrayList<Integer> repetitions = new ArrayList<>(); // 允许重复播放的音乐类型
-    private boolean isPlay = false; // 这个队列正在播放
+    /**
+     * 用HashMap方式存储类型
+     */
+    private final HashMap<Integer, SoundPoolPlayer> soundList = new HashMap<>();
+    /**
+     * 用HashMap方式存储类型,这个判断类型是否播放中
+     */
+    private final HashMap<Integer, Boolean> soundIsPlayList = new HashMap<>();
+    /**
+     * 加入播放的音乐队列
+     */
+    private final ArrayList<Integer> playerQueues = new ArrayList<>();
+    /**
+     * 允许重复播放的音乐类型
+     */
+    private ArrayList<Integer> repetitions = new ArrayList<>();
+    /**
+     * 这个队列正在播放
+     */
+    private boolean isPlay = false;
+    private Callback mCallback;
+
+    /**
+     * 回调
+     */
+    public interface Callback {
+        /**
+         * 播放完的事件
+         *
+         * @param type 播放的类型
+         */
+        void playCompletionListener(int type);
+    }
+
+    /**
+     * 设置回调
+     *
+     * @param callback 回调事件
+     */
+    public void setCallback(Callback callback) {
+        mCallback = callback;
+    }
 
     /**
      * 加入类型
@@ -94,6 +131,9 @@ public class MediaPlayerQueue {
     private void playCompletionListener(int type) {
         if (playerQueues.size() > 0) {
             if (type == playerQueues.get(0)) {
+                if (mCallback != null) {
+                    mCallback.playCompletionListener(type);
+                }
                 // 播放完，判断类型是否一样，一样就删除本身
                 Log.d(TAG, "删除语音 :" + playerQueues.get(0));
                 playerQueues.remove(0);
@@ -112,8 +152,9 @@ public class MediaPlayerQueue {
         Iterator<Integer> it = playerQueues.iterator();
         while (it.hasNext()) {
             Integer x = it.next();
-            if (x == type)
+            if (x == type) {
                 it.remove();
+            }
         }
         if (playerQueues.size() <= 0) {
             isPlay = false;
@@ -130,16 +171,18 @@ public class MediaPlayerQueue {
             isPlay = false;
             // 停止当前所有声音队列
             for (Integer item : playerQueues) {
-                if (soundList.get(item) != null)
+                if (soundList.get(item) != null) {
                     Objects.requireNonNull(soundList.get(item)).stop();
+                }
             }
             // 删除所有声音队列
             playerQueues.clear();
         } else {
             // 如果是播放中，则留下当前第一个，等它播放完
             for (int i = playerQueues.size() - 1; i > 0; i--) {
-                if (playerQueues.get(i) != null)
+                if (playerQueues.get(i) != null) {
                     playerQueues.remove(i);
+                }
             }
         }
         // 设置所有音乐类型都不是播放中

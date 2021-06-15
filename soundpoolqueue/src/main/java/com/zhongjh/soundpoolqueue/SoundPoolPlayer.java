@@ -14,18 +14,51 @@ import android.util.Log;
  */
 public class SoundPoolPlayer extends SoundPool {
 
-    private AssetFileDescriptor assetFileDescriptor; // 播放文件，用文件加载的方式生成SoundPool
-    private Context context; // 上下文
-    private int resId; // 资源id，用资源加载的方式生成SoundPool
-    private int soundId; // 播放id
-    private int streamId; // 流id,这个id才是用来暂停等操作的
-    private long duration = 0; // 播放时长
-    private boolean isPlaying = false; // 是否正在播放中
-    private boolean loaded = false; // 是否加载中
+    /**
+     * 播放文件，用文件加载的方式生成SoundPool
+     */
+    private AssetFileDescriptor assetFileDescriptor;
+    /**
+     * 上下文
+     */
+    private Context context;
+    /**
+     * 资源id，用资源加载的方式生成SoundPool
+     */
+    private int resId;
+    /**
+     * 播放id
+     */
+    private int soundId;
+    /**
+     * 流id,这个id才是用来暂停等操作的
+     */
+    private int streamId;
+    /**
+     * 播放时长
+     */
+    private long duration = 0;
+    /**
+     * 是否正在播放中
+     */
+    private boolean isPlaying = false;
+    /**
+     * 是否加载中
+     */
+    private boolean loaded = false;
     private Handler handler;
-    private long startTime; // 播放时间
-    private long timeSinceStart = 0; // 暂停时间
-    private MediaPlayer.OnCompletionListener listener; // 完成事件
+    /**
+     * 播放时间
+     */
+    private long startTime;
+    /**
+     * 暂停时间
+     */
+    private long timeSinceStart = 0;
+    /**
+     * 完成事件
+     */
+    private MediaPlayer.OnCompletionListener listener;
 
     /**
      * 创造者模式
@@ -156,11 +189,12 @@ public class SoundPoolPlayer extends SoundPool {
     private void loadAndPlay() {
         duration = getSoundDuration();
         // 判断是文件方式加载还是资源id方式加载
-        if (assetFileDescriptor != null)
+        if (assetFileDescriptor != null) {
             soundId = super.load(assetFileDescriptor, 9);
-        else
+        } else {
             // 资源方式加载
             soundId = super.load(context, resId, 9);
+        }
         setOnLoadCompleteListener((soundPool, sampleId, status) -> {
             loaded = true;
             playIt();
