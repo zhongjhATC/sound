@@ -109,7 +109,7 @@ public class SoundPoolPlayer extends SoundPool {
     /**
      * 播放流程
      */
-    private Runnable runnable = new Runnable() {
+    private final Runnable runnable = new Runnable() {
         @Override
         public void run() {
             if (isPlaying) {

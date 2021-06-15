@@ -16,6 +16,13 @@
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.ABNORMAL_TEMPERATURE, loadSound("temp_exception.mp3"));
         mediaPlayerQueue.addSoundPoolPlayer(VoicePromptType.NEAR_MEASURE, loadSound("near_measure_temperature.mp3"));
 
+        // 回调，播放声音文件结束后
+        mediaPlayerQueue.setCallback(type -> {
+                    if (type == VoicePromptType.NORMAL_TEMPERATURE) {
+                        Toast.makeText(MainActivity.this, "刚播完温度正常", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
         // 设置请靠近测温允许重复播放
         ArrayList<Integer> repetitions = new ArrayList<>();
         repetitions.add(VoicePromptType.NEAR_MEASURE);
