@@ -137,6 +137,7 @@ public class MediaPlayerQueue {
                 // 播放完，判断类型是否一样，一样就删除本身
                 Log.d(TAG, "删除语音 :" + playerQueues.get(0));
                 playerQueues.remove(0);
+                soundIsPlayList.put(type, false);
             }
             // 播放下一首
             playRecursive();

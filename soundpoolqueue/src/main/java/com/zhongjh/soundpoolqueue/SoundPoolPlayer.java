@@ -65,16 +65,21 @@ public class SoundPoolPlayer extends SoundPool {
      */
     public static class Builder {
 
-        private int maxDuration; // 由于一些音频文件不规范的特殊因素，比如文件长度有10秒，但是实际上只有8秒是有声音的，所以我们这里要给它设置最长8秒
+        /**
+         * 由于一些音频文件不规范的特殊因素
+         * 比如文件长度有10秒，但是实际上只有8秒是有声音的，所以我们这里要给它设置持续时间8秒
+         * 或者硬件原因解析100秒，所以也能使用这个方法
+         */
+        private int duration;
 
         /**
          * 用实体方式打开
          *
-         * @param maxDuration 最长长度
+         * @param duration 持续时间
          * @return 观察者
          */
-        public Builder maxDuration(int maxDuration) {
-            this.maxDuration = maxDuration;
+        public Builder Duration(int duration) {
+            this.duration = duration;
             return this;
         }
 
@@ -87,6 +92,7 @@ public class SoundPoolPlayer extends SoundPool {
         public SoundPoolPlayer create(AssetFileDescriptor assetFileDescriptor) {
             SoundPoolPlayer player = new SoundPoolPlayer(1, AudioManager.STREAM_MUSIC, 0);
             player.assetFileDescriptor = assetFileDescriptor;
+            player.duration = duration;
             return player;
         }
 
@@ -101,6 +107,7 @@ public class SoundPoolPlayer extends SoundPool {
             SoundPoolPlayer player = new SoundPoolPlayer(1, AudioManager.STREAM_MUSIC, 0);
             player.context = context;
             player.resId = resId;
+            player.duration = duration;
             return player;
         }
 
@@ -187,7 +194,9 @@ public class SoundPoolPlayer extends SoundPool {
      * 加载并播放
      */
     private void loadAndPlay() {
-        duration = getSoundDuration();
+        if (duration <= 0 ) {
+            duration = getSoundDuration();
+        }
         // 判断是文件方式加载还是资源id方式加载
         if (assetFileDescriptor != null) {
             soundId = super.load(assetFileDescriptor, 9);
